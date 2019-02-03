@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <!--
+   /* FHEM tablet ui */
+   /*
+   * UI builder framework for FHEM
+   *
+   * Version: 2.7.*
+   * URL: https://github.com/knowthelist/fhem-tablet-ui
+   *
+   * Copyright (c) 2015-2018 Mario Stephan <mstephan@shared-files.de>
+   * Under MIT License (http://www.opensource.org/licenses/mit-license.php)
+   *
+   * - create a new folder named 'tablet' in /<fhem-path>/www
+   * - copy all files incl. sub folders into /<fhem-path>/www/tablet
+   * - Tadaaa! A new fhem ui in http://<fhem-url>:8083/fhem/tablet/index_empty.html
+   */
+   -->
+   
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+   <meta name="widget_base_width" content="116">
+   <meta name="widget_base_height" content="131">
+   <meta name="mobile-web-app-capable" content="yes">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="longpoll" content="1">
+   <meta name="debug" content="1">
+   <link rel="icon" href="favicon.ico" type="image/x-icon" />
+
+   
+
+   <!-- define your personal style here, it wont be overwritten  -->
+   <!-- link rel="stylesheet" href="css/fhem-green-ui.css" / -->
+   <!-- link rel="stylesheet" href="css/fhem-tablet-ui-user.css" / -->
+   
+   <script src="js/fhem-tablet-ui.min.js" defer></script>
+
+   <!-- Remove this line to enable for usage with WebViewControl
+   <script defer>var wvcDevices = {'12345': 'Tablet'}; var wvcUserCssFile="webviewcontrol.css"</script>
+   <script src="../pgm2/cordova-2.3.0.js" defer></script>
+   <script src="../pgm2/webviewcontrol.js" defer></script>
+   <!-- End for WebViewControl -->
+
+   <link rel="stylesheet" href="lib/material-icons.min.css" />
+   <link rel="stylesheet" href="lib/font-awesome.min.css" /> 
+  
+   <script src="lib/jquery.min.js"></script>
+   <script src="lib/jquery-ui.min.js"></script>
+
+    <script>
+    $( document ).ready(function() {
+        var deviceName = 'raumfeld';
+        var dataRow = 1;
+        var dataCol = 1;
+        ftui.config.fhemDir = '/fhem/'
+        ftui.sendFhemCommand('get ' + deviceName + ' rooms').done(
+            function (response) {
+                var result = response.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+                var roomsArr = result.split (',');
+                $('#gridsterList').append(
+                    $('<li data-row="' + dataRow + 
+                    '" data-col="' + dataCol + 
+                    '" data-sizey="2" data-sizex="2">').append (
+                    $('<div data-type="swiper">').append (
+                        $('<ul id="raumfeldSwiperList">')
+                    )));
+
+                roomsArr.forEach (function(element, index) {
+                    $('#raumfeldSwiperList').append(
+                        $('<li data-template="raumfeld.html" data-parameter=' + 
+                            "'" + '{"deviceName":"' + deviceName +
+                        '","parHeading":"' + element +
+                        '","parNoSpace":"' +  element.replace(/\s/g, '') +
+                        '","parRoom":"' + element + '"}' + "'>"));
+                });
+        });
+    });
+    </script>
+    
+   
+   <title>FHEM-Tablet-UI</title>
+
+</head>
+<body>
+    <div class="gridster">
+        <ul id="gridsterList">
+        </ul>
+     </div>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!--
+   /* raumfeld.html */
+   /*
+   * this is a template for usage with FHEM Tablet UI
+   * of a Teugel Raumfeld system
+   *
+   * Copyright (c) 2019 Rainer Zeifang
+   * For the license see https://github.com/rainerz1964/FHEM/blob/master/LICENSE
+   *
+   */
+   -->
+
+<div class="cell inline">parHeading</div>
+
+<div data-type="switch" 
+     data-device="deviceName"
+     id="power" 
+     data-get="parNoSpacePower"
+     data-set="power &quot;parRoom&quot;"
+     data-icon="fa-music"
+     class="cell inline">
+</div>
+
+
+<div class="cell inline"
+     id="title"
+     data-type="select"
+     data-device="deviceName"
+     data-list="Favorites"
+     data-get="parNoSpaceTitle"
+     data-set="title &quot;parRoom&quot;"
+     data-quote="&quot;"
+     data-delimiter=",">
+</div>
+
+<div data-type="spinner" 
+     data-device="deviceName"
+     id="volume"
+     data-get="parNoSpaceVolume"
+     data-set="volume &quot;parRoom&quot;"
+     data-max="100"
+     data-step="5"
+     data-icon-left="fa-volume-down"
+     data-icon-right="fa-volume-up"
+     class="spinner value horizontal centered">
+</div>
+
