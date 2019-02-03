@@ -4,7 +4,7 @@
 
 ### Raumfeld
 
-*Raumfeld_98.pm* implements access to a Teufel Raumfeld system via a <a href="https://github.com/ChriD/Raumserver">Raumserver</a>
+*Raumfeld_98.pm* implements access to a Teufel Raumfeld system via a [Raumserver](https://github.com/ChriD/Raumserver)
 It reads the various rooms of the system during intialization as well as the Favourites list and allows you to play the elements in the Favourites list in the
 corresponding room. It allows as well to change the volume in each room. 
 

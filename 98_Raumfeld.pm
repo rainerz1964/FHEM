@@ -659,63 +659,49 @@ sub Raumfeld_Attr(@) {
 =pod
 =begin html
 
-<a name="Raumfeld"></a>
-<h3>Raumfeld</h3>
+<h1 id="fhem">FHEM</h1>
+<h2 id="raumfeld-module-for-fhem">Raumfeld Module for FHEM</h2>
+<h3 id="raumfeld">Raumfeld</h3>
+<p><em>Raumfeld_98.pm</em> implements access to a Teufel Raumfeld system via a <a href="https://github.com/ChriD/Raumserver">Raumserver</a>
+It reads the various rooms of the system during intialization as well as the Favourites list and allows you to play the elements in the Favourites list in the
+corresponding room. It allows as well to change the volume in each room.</p>
+<h4 id="define">Define</h4>
+<p><code>define &lt;name&gt; Raumfeld &lt;address&gt;</code></p>
+<p>Example: <code>define Raumfeld raumfeld http://127.0.0.1:8585</code></p>
+<p>The <code>&lt;address&gt;</code> parameter is the address of the Raumserver.</p>
+<h4 id="set">Set</h4>
+<p><code>set &lt;name&gt; &lt;option&gt; &lt;room&gt; &lt;value&gt;</code>
+Options:</p>
 <ul>
-    <i>Raumfeld</i> implements access to a Teufel Raumfeld system via a <a href="https://github.com/ChriD/Raumserver">Raumserver</a>
-    It reads the various rooms of the system during intialization as well as the Favourites list and allows you to play the elements in the Favourites list in the
-    corresponding room. It allows as well to change the volume in each room. 
-    <br><br>
-    <a name="Raumfelddefine"></a>
-    <b>Define</b>
-    <ul>
-        <code>define &lt;name&gt; Raumfeld &lt;address&gt;</code>
-        <br><br>
-        Example: <code>define Raumfeld Raumfeld http://127.0.0.1:8585</code>
-        <br><br>
-        The "address" parameter is the address of the Raumserver.
-    </ul>
-    <br>
-    
-    <a name="Raumfeldset"></a>
-    <b>Set</b><br>
-    <ul>
-        <code>set &lt;name&gt; &lt;option&gt; &lt;room&gt; &lt;value&gt;</code>
-        <br><br>
-        <br><br>
-        Options:
-        <ul>
-              <li><i>title</i><br>
-                  Sets either the predefined favorites and plays them or the user defined streams and plays them in a room
-                  code>set &lt;name&gt; &lt;room&gt; &lt;value&gt;</code></li>
-              <li><i>volume</i><br>
-                  Sets the volume of a room to a new &lt;value&gt;
-                  <code>set &lt;name&gt; &lt;room&gt; &lt;value&gt;</code></li>
-              <li><i>volume</i><br>
-                  Switch the power of a room to &lt;on|off&gt;
-                  <code>set &lt;name&gt; &lt;room&gt; &lt;on|off&gt;</code></li>
-        </ul>
-    </ul>
-    <br>
-
-    <a name="Raumfeldget"></a>
-    <b>Get</b><br>
-    <ul>
-        <code>get &lt;name&gt; &lt;option&gt; &lt;room&gt;</code>
-        <br><br>
-        You can <i>get</i> the value of any of the options described in 
-        <a href="#Raumfeldset">paragraph "Set" above</a>. See 
-        <a href="http://fhem.de/commandref.html#get">commandref#get</a> for more info about 
-        the get command.
-    </ul>
-    <br>
-    
-    <a name="Raumfeldattr"></a>
-    <b>Attributes</b>
-    <ul>
-        <li>none</li>
-    </ul>
+<li><code>title</code>
+Sets either the predefined favorites and plays them or the user defined streams and plays them in a room
+<code>set &lt;name&gt; title &lt;room&gt; &lt;value&gt;</code></li>
+<li><code>volume</code>
+Sets the volume of a room to a new <code>&lt;value&gt;</code>
+<code>set &lt;name&gt; volume &lt;room&gt; &lt;value&gt;</code></li>
+<li><code>power</code>
+Switch the power of a room to <code>&lt;on|off&gt;</code>
+<code>set &lt;name&gt; power &lt;room&gt; &lt;on|off&gt;</code></li>
 </ul>
+<h4 id="get">Get</h4>
+<p><code>get &lt;name&gt; &lt;option&gt; &lt;room&gt;</code></p>
+<p>You can <code>get</code> the value of any of the options described in
+paragraph &quot;Set&quot; above.</p>
+<h4 id="readings">Readings</h4>
+<p>For usage with FHEM Tablet UI for each room <code>&lt;room&gt;</code> there are three readings available</p>
+<ul>
+<li><code>&lt;room&gt;Title</code></li>
+<li><code>&lt;room&gt;Volume</code></li>
+<li><code>&lt;room&gt;Power</code></li>
+</ul>
+<p>If the room name contains white spaces these are eliminated before building the reading</p>
+<p>Two addtional readings are available</p>
+<ul>
+<li><code>rooms</code>containing a string of a comma separated list with all rooms in the Ruamfeld system</li>
+<li><code>Favorites</code> a sting of a comma separated lsit with all Favorties, that can be used as values for setting the <code>title</code></li>
+</ul>
+<h4 id="attributes">Attributes</h4>
+<p>none</p>
 
 =end html
 
