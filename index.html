@@ -53,7 +53,7 @@
         var deviceName = 'raumfeld';
         var dataRow = 1;
         var dataCol = 1;
-        ftui.config.fhemDir = '/fhem/'
+        ftui.init();
         ftui.sendFhemCommand('get ' + deviceName + ' rooms').done(
             function (response) {
                 var result = response.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
