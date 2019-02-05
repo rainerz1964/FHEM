@@ -648,9 +648,6 @@ sub Raumfeld_Set($$$) {
 
 sub Raumfeld_Attr(@) {
 	my ($cmd,$name,$attr_name,$attr_value) = @_;
-	if($cmd eq "set") {
-	    return "Unknown attr $attr_name";
-	}
 	return undef;
 }
 
