@@ -39,7 +39,7 @@ use JSON;
 use Data::Dumper;
 use URI::Escape;
 
-my $logLevel = 3;
+my $logLevel = 6;
 
 my %Raumfeld_gets = (
 	"title" => "xx",
