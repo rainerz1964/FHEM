@@ -39,7 +39,7 @@ use JSON;
 use Data::Dumper;
 use URI::Escape;
 
-my $logLevel = 3;
+my $logLevel = 6;
 
 my %Raumfeld_gets = (
 	"title" => "xx",
@@ -121,6 +121,9 @@ sub Raumfeld_GetRoomsCallback($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: GetRoomsCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -191,6 +194,9 @@ sub Raumfeld_GetUpdateCallback($$$) {
     my $name    = $hash->{NAME};
     my $rooms   = $param->{rooms};
     Log3 $name, 3, "$name: callback ReadVolumes: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -306,6 +312,9 @@ sub Raumfeld_ReadFavorites($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: callback ReadFavorites: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -361,6 +370,9 @@ sub Raumfeld_SetVolumeCallback($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: SetVolumeCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -498,6 +510,9 @@ sub Raumfeld_SetTitleCallback($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: SetTitleCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     
@@ -550,6 +565,9 @@ sub Raumfeld_SetPlayCallback($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: SetPlayCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
