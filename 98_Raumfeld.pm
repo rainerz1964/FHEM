@@ -46,6 +46,8 @@ my %Raumfeld_gets = (
 	"volume" => 0,
     "station" => "SWR3",
     "power" => "off",
+    "favorite" => "SWR3",
+    "quickplay" => "Bad",
     "rooms" => " "
 );
 
@@ -459,11 +461,11 @@ sub Raumfeld_SetTitle($$$) {
     my $name = $hash->{NAME};
     my $urlAddress = $hash->{url};
     my $station = Raumfeld_FindStation ($title);
-    my $container = Raumfeld_FindContainer ($hash, $title);
+    my $single = Raumfeld_FindSingle ($hash, $title);
     my $request = "";
     
-    if ($container ne "") {
-        $request = $urlAddress . "/raumserver/controller/loadSingle?id=" . uri_escape($room) . "&value=" . uri_escape($container) ;
+    if ($single ne "") {
+        $request = $urlAddress . "/raumserver/controller/loadSingle?id=" . uri_escape($room) . "&value=" . uri_escape($single) ;
     } elsif ($station ne "") {
         $request = $urlAddress . "/raumserver/controller/loadUri?id=" . uri_escape($room) . "&value=" . uri_escape($station) ;
     } else {
@@ -494,7 +496,7 @@ sub Raumfeld_FindStation ($) {
     return "";
 }
 
-sub Raumfeld_FindContainer ($$) {
+sub Raumfeld_FindSingle ($$) {
     my ($hash, $title) = @_;
     my $favorites = ReadingsVal ($hash->{NAME}, '.favorites', 0);
     foreach (@$favorites) {
@@ -535,6 +537,52 @@ sub Raumfeld_SetTitleCallback($$$) {
 }
 
 ##############################################################################
+# Raumfeld_QuickPlay
+#
+# switch on a room and play favorite
+#
+###############################################################################
+
+
+sub Raumfeld_QuickPlay ($$) {
+    my ($hash, $room) = @_;
+    my $name = $hash->{NAME};
+    my $urlAddress = $hash->{url};
+    my $request = $urlAddress . "/raumserver/controller/leaveStandby?id=" . uri_escape($room) . "&scope=room";
+    Log3 ($name, $logLevel, "Raumfeld QuickPlay with request: $request");
+    my $param = {
+                    room       => $room,  
+                    url        => $request,
+                    timeout    => 5,
+                    hash       => $hash,
+                    method     => "GET",
+                    header     => "User-Agent: FHEM\r\nAccept: application/json",
+                    callback   => \&Raumfeld_QuickPlayCallback
+    };  
+    HttpUtils_NonblockingGet ($param);
+}
+
+sub Raumfeld_QuickPlayCallback($$$) {
+    my ($param, $err, $body) = @_;
+    my $hash    = $param->{hash};
+    my $name    = $hash->{NAME};
+    Log3 $name, 3, "$name: QuickPlayCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
+    my $jsonData = encode_utf8($body);
+    my $result = decode_json($jsonData);
+    if ($result->{'error'} eq 'true') {
+        Log3 ($name, 3, "$name: QuickPlayCallback: request returns error in response body");
+        return;
+    }
+    my $favorite = ReadingsVal ($name, 'favorite', 0);
+    my $room = $hash->{'room'};
+    Raumfeld_SetTitle ($hash, $room, $favorite);
+    Log3 ($name, $logLevel, "Raumfeld Play: Successful QuickPlay");
+}
+
+##############################################################################
 # Raumfeld_Play
 #
 # Play a room
@@ -555,28 +603,49 @@ sub Raumfeld_Play ($$) {
                     hash       => $hash,
                     method     => "GET",
                     header     => "User-Agent: FHEM\r\nAccept: application/json",
-                    callback   => \&Raumfeld_SetPlayCallback
+                    callback   => \&Raumfeld_PlayCallback
     };  
     HttpUtils_NonblockingGet ($param);
 }
 
-sub Raumfeld_SetPlayCallback($$$) {
+sub Raumfeld_PlayCallback($$$) {
     my ($param, $err, $body) = @_;
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
-    Log3 $name, 3, "$name: SetPlayCallback: Error: $err" if ($err);
+    Log3 $name, 3, "$name: PlayCallback: Error: $err" if ($err);
     if ($err) {
         return;
     }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
-        Log3 ($name, 3, "$name: SetPlayCallback: request returns error in response body");
+        Log3 ($name, 3, "$name: PlayCallback: request returns error in response body");
         return;
     }
     Log3 ($name, $logLevel, "Raumfeld Play: Successful Play");
 }
 
+
+##############################################################################
+# Raumfeld_SetFavorite
+#
+# Play a room
+#
+###############################################################################
+
+sub Raumfeld_SetFavorite($$) {
+    my ($hash, $favorite) = @_;
+    my $name    = $hash->{'NAME'};
+
+    my $topFavorite = Raumfeld_FindSingle ($hash, $favorite);
+    if ($topFavorite ne "") {
+        readingsBeginUpdate($hash);
+        readingsBulkUpdateIfChanged ($hash, 'favorite', $favorite, 1);
+        readingsEndUpdate($hash, 1);
+
+        Log3 ($name, $logLevel, "Raumfeld SetFavorite: Successful");
+    }
+}
 
 ##############################################################################
 # Raumfeld_*
@@ -628,6 +697,9 @@ sub Raumfeld_Get($$$) {
     } elsif (($opt eq "rooms")) {
         my $rooms = ReadingsVal ($name, 'rooms', 0);
         return $rooms;
+    } elsif (($opt eq "favorite")) {
+        my $favorite = ReadingsVal ($name, 'favorite', 0);
+        return $favorite;
     }
 
     return undef;
@@ -658,8 +730,12 @@ sub Raumfeld_Set($$$) {
         $Raumfeld_StationList{$param3} = $value;
     } elsif ($opt eq 'power') {
         Raumfeld_SetPower ($hash, $param3, $value);
-    } 
-    
+    } elsif ($opt eq 'quickplay') {
+        Raumfeld_QuickPlay ($hash, $param3);
+    } elsif ($opt eq 'favorite') {
+        Raumfeld_SetFavorite ($hash, $param3);
+        return "$opt set to $param3";
+    }
 	return "$opt for $param3 set to $value";
 }
 
