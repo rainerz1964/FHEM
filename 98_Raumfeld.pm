@@ -39,14 +39,13 @@ use JSON;
 use Data::Dumper;
 use URI::Escape;
 
-my $logLevel = 6;
+my $logLevel = 0;
 
 my %Raumfeld_gets = (
 	"title" => "xx",
 	"volume" => 0,
     "station" => "SWR3",
     "power" => "off",
-    "favorite" => "SWR3",
     "quickplay" => "Bad",
     "rooms" => " "
 );
@@ -70,7 +69,7 @@ sub Raumfeld_Initialize($) {
     $hash->{AttrFn}     = 'Raumfeld_Attr';
     $hash->{ReadFn}     = 'Raumfeld_Read';
 
-    $hash->{AttrList} = $readingFnAttributes;
+    $hash->{AttrList} = "favorite " . $readingFnAttributes;
     $hash->{parseParams}=1;
 }
 
@@ -576,8 +575,19 @@ sub Raumfeld_QuickPlayCallback($$$) {
         Log3 ($name, 3, "$name: QuickPlayCallback: request returns error in response body");
         return;
     }
-    my $favorite = ReadingsVal ($name, 'favorite', 0);
-    my $room = $hash->{'room'};
+    my $favorite = AttrVal ($name, 'favorite', "");
+    if ($favorite eq "") {
+        my $favorites = ReadingsVal ($name, '.favorites', 99);
+        if ($favorites ne 99) {
+            foreach (@$favorites) {
+                if ($_->{'title'} ne "") {
+                    $favorite = $_->{'title'};
+                    last;
+                }
+            }
+        }    
+    }
+    my $room = $param->{'room'};
     Raumfeld_SetTitle ($hash, $room, $favorite);
     Log3 ($name, $logLevel, "Raumfeld Play: Successful QuickPlay");
 }
@@ -625,27 +635,6 @@ sub Raumfeld_PlayCallback($$$) {
     Log3 ($name, $logLevel, "Raumfeld Play: Successful Play");
 }
 
-
-##############################################################################
-# Raumfeld_SetFavorite
-#
-# Play a room
-#
-###############################################################################
-
-sub Raumfeld_SetFavorite($$) {
-    my ($hash, $favorite) = @_;
-    my $name    = $hash->{'NAME'};
-
-    my $topFavorite = Raumfeld_FindSingle ($hash, $favorite);
-    if ($topFavorite ne "") {
-        readingsBeginUpdate($hash);
-        readingsBulkUpdateIfChanged ($hash, 'favorite', $favorite, 1);
-        readingsEndUpdate($hash, 1);
-
-        Log3 ($name, $logLevel, "Raumfeld SetFavorite: Successful");
-    }
-}
 
 ##############################################################################
 # Raumfeld_*
@@ -697,9 +686,6 @@ sub Raumfeld_Get($$$) {
     } elsif (($opt eq "rooms")) {
         my $rooms = ReadingsVal ($name, 'rooms', 0);
         return $rooms;
-    } elsif (($opt eq "favorite")) {
-        my $favorite = ReadingsVal ($name, 'favorite', 0);
-        return $favorite;
     }
 
     return undef;
@@ -732,10 +718,7 @@ sub Raumfeld_Set($$$) {
         Raumfeld_SetPower ($hash, $param3, $value);
     } elsif ($opt eq 'quickplay') {
         Raumfeld_QuickPlay ($hash, $param3);
-    } elsif ($opt eq 'favorite') {
-        Raumfeld_SetFavorite ($hash, $param3);
-        return "$opt set to $param3";
-    }
+    } 
 	return "$opt for $param3 set to $value";
 }
 
@@ -767,6 +750,9 @@ Options:</p>
 <li><code>title</code>
 Sets either the predefined favorites and plays them or the user defined streams and plays them in a room
 <code>set &lt;name&gt; title &lt;room&gt; &lt;value&gt;</code></li>
+<li><code>quickplay</code>
+turns on the corresponding speaker in the room, takes the favorite from the attribute<code>favorite</code> plays them in a room
+<code>set &lt;name&gt; quickplay &lt;room&gt;</code></li>
 <li><code>volume</code>
 Sets the volume of a room to a new <code>&lt;value&gt;</code>
 <code>set &lt;name&gt; volume &lt;room&gt; &lt;value&gt;</code></li>
@@ -792,7 +778,11 @@ paragraph &quot;Set&quot; above.</p>
 <li><code>Favorites</code> a sting of a comma separated lsit with all Favorties, that can be used as values for setting the <code>title</code></li>
 </ul>
 <h4 id="attributes">Attributes</h4>
-<p>none</p>
+<ul>
+<li><code>favorite</code>
+This string is used by <code>quickplay</code> as the title to play.
+</li>
+</ul>
 
 =end html
 
