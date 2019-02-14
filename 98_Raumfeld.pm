@@ -39,13 +39,14 @@ use JSON;
 use Data::Dumper;
 use URI::Escape;
 
-my $logLevel = 3;
+my $logLevel = 0;
 
 my %Raumfeld_gets = (
 	"title" => "xx",
 	"volume" => 0,
     "station" => "SWR3",
     "power" => "off",
+    "quickplay" => "Bad",
     "rooms" => " "
 );
 
@@ -68,7 +69,7 @@ sub Raumfeld_Initialize($) {
     $hash->{AttrFn}     = 'Raumfeld_Attr';
     $hash->{ReadFn}     = 'Raumfeld_Read';
 
-    $hash->{AttrList} = $readingFnAttributes;
+    $hash->{AttrList} = "favorite " . $readingFnAttributes;
     $hash->{parseParams}=1;
 }
 
@@ -121,6 +122,9 @@ sub Raumfeld_GetRoomsCallback($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: GetRoomsCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -191,6 +195,9 @@ sub Raumfeld_GetUpdateCallback($$$) {
     my $name    = $hash->{NAME};
     my $rooms   = $param->{rooms};
     Log3 $name, 3, "$name: callback ReadVolumes: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -306,6 +313,9 @@ sub Raumfeld_ReadFavorites($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: callback ReadFavorites: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -361,6 +371,9 @@ sub Raumfeld_SetVolumeCallback($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: SetVolumeCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
@@ -447,11 +460,11 @@ sub Raumfeld_SetTitle($$$) {
     my $name = $hash->{NAME};
     my $urlAddress = $hash->{url};
     my $station = Raumfeld_FindStation ($title);
-    my $container = Raumfeld_FindContainer ($hash, $title);
+    my $single = Raumfeld_FindSingle ($hash, $title);
     my $request = "";
     
-    if ($container ne "") {
-        $request = $urlAddress . "/raumserver/controller/loadSingle?id=" . uri_escape($room) . "&value=" . uri_escape($container) ;
+    if ($single ne "") {
+        $request = $urlAddress . "/raumserver/controller/loadSingle?id=" . uri_escape($room) . "&value=" . uri_escape($single) ;
     } elsif ($station ne "") {
         $request = $urlAddress . "/raumserver/controller/loadUri?id=" . uri_escape($room) . "&value=" . uri_escape($station) ;
     } else {
@@ -482,7 +495,7 @@ sub Raumfeld_FindStation ($) {
     return "";
 }
 
-sub Raumfeld_FindContainer ($$) {
+sub Raumfeld_FindSingle ($$) {
     my ($hash, $title) = @_;
     my $favorites = ReadingsVal ($hash->{NAME}, '.favorites', 0);
     foreach (@$favorites) {
@@ -498,6 +511,9 @@ sub Raumfeld_SetTitleCallback($$$) {
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
     Log3 $name, 3, "$name: SetTitleCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     
@@ -517,6 +533,63 @@ sub Raumfeld_SetTitleCallback($$$) {
     readingsEndUpdate($hash, 1);
 
     Raumfeld_Play ($hash, $param->{'room'});
+}
+
+##############################################################################
+# Raumfeld_QuickPlay
+#
+# switch on a room and play favorite
+#
+###############################################################################
+
+
+sub Raumfeld_QuickPlay ($$) {
+    my ($hash, $room) = @_;
+    my $name = $hash->{NAME};
+    my $urlAddress = $hash->{url};
+    my $request = $urlAddress . "/raumserver/controller/leaveStandby?id=" . uri_escape($room) . "&scope=room";
+    Log3 ($name, $logLevel, "Raumfeld QuickPlay with request: $request");
+    my $param = {
+                    room       => $room,  
+                    url        => $request,
+                    timeout    => 5,
+                    hash       => $hash,
+                    method     => "GET",
+                    header     => "User-Agent: FHEM\r\nAccept: application/json",
+                    callback   => \&Raumfeld_QuickPlayCallback
+    };  
+    HttpUtils_NonblockingGet ($param);
+}
+
+sub Raumfeld_QuickPlayCallback($$$) {
+    my ($param, $err, $body) = @_;
+    my $hash    = $param->{hash};
+    my $name    = $hash->{NAME};
+    Log3 $name, 3, "$name: QuickPlayCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
+    my $jsonData = encode_utf8($body);
+    my $result = decode_json($jsonData);
+    if ($result->{'error'} eq 'true') {
+        Log3 ($name, 3, "$name: QuickPlayCallback: request returns error in response body");
+        return;
+    }
+    my $favorite = AttrVal ($name, 'favorite', "");
+    if ($favorite eq "") {
+        my $favorites = ReadingsVal ($name, '.favorites', 99);
+        if ($favorites ne 99) {
+            foreach (@$favorites) {
+                if ($_->{'title'} ne "") {
+                    $favorite = $_->{'title'};
+                    last;
+                }
+            }
+        }    
+    }
+    my $room = $param->{'room'};
+    Raumfeld_SetTitle ($hash, $room, $favorite);
+    Log3 ($name, $logLevel, "Raumfeld Play: Successful QuickPlay");
 }
 
 ##############################################################################
@@ -540,20 +613,23 @@ sub Raumfeld_Play ($$) {
                     hash       => $hash,
                     method     => "GET",
                     header     => "User-Agent: FHEM\r\nAccept: application/json",
-                    callback   => \&Raumfeld_SetPlayCallback
+                    callback   => \&Raumfeld_PlayCallback
     };  
     HttpUtils_NonblockingGet ($param);
 }
 
-sub Raumfeld_SetPlayCallback($$$) {
+sub Raumfeld_PlayCallback($$$) {
     my ($param, $err, $body) = @_;
     my $hash    = $param->{hash};
     my $name    = $hash->{NAME};
-    Log3 $name, 3, "$name: SetPlayCallback: Error: $err" if ($err);
+    Log3 $name, 3, "$name: PlayCallback: Error: $err" if ($err);
+    if ($err) {
+        return;
+    }
     my $jsonData = encode_utf8($body);
     my $result = decode_json($jsonData);
     if ($result->{'error'} eq 'true') {
-        Log3 ($name, 3, "$name: SetPlayCallback: request returns error in response body");
+        Log3 ($name, 3, "$name: PlayCallback: request returns error in response body");
         return;
     }
     Log3 ($name, $logLevel, "Raumfeld Play: Successful Play");
@@ -640,17 +716,15 @@ sub Raumfeld_Set($$$) {
         $Raumfeld_StationList{$param3} = $value;
     } elsif ($opt eq 'power') {
         Raumfeld_SetPower ($hash, $param3, $value);
+    } elsif ($opt eq 'quickplay') {
+        Raumfeld_QuickPlay ($hash, $param3);
     } 
-    
 	return "$opt for $param3 set to $value";
 }
 
 
 sub Raumfeld_Attr(@) {
 	my ($cmd,$name,$attr_name,$attr_value) = @_;
-	if($cmd eq "set") {
-	    return "Unknown attr $attr_name";
-	}
 	return undef;
 }
 
@@ -676,6 +750,9 @@ Options:</p>
 <li><code>title</code>
 Sets either the predefined favorites and plays them or the user defined streams and plays them in a room
 <code>set &lt;name&gt; title &lt;room&gt; &lt;value&gt;</code></li>
+<li><code>quickplay</code>
+turns on the corresponding speaker in the room, takes the favorite from the attribute<code>favorite</code> plays them in a room
+<code>set &lt;name&gt; quickplay &lt;room&gt;</code></li>
 <li><code>volume</code>
 Sets the volume of a room to a new <code>&lt;value&gt;</code>
 <code>set &lt;name&gt; volume &lt;room&gt; &lt;value&gt;</code></li>
@@ -701,7 +778,11 @@ paragraph &quot;Set&quot; above.</p>
 <li><code>Favorites</code> a sting of a comma separated lsit with all Favorties, that can be used as values for setting the <code>title</code></li>
 </ul>
 <h4 id="attributes">Attributes</h4>
-<p>none</p>
+<ul>
+<li><code>favorite</code>
+This string is used by <code>quickplay</code> as the title to play.
+</li>
+</ul>
 
 =end html
 
