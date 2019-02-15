@@ -381,16 +381,11 @@ sub Raumfeld_SetVolumeCallback($$$) {
         return;
     }
     my $volumes = ReadingsVal ($name, '.volumes', 1);
-    my $currentRoom = ReadingsVal ($name, 'currentRoom', "");
     $volumes->{$param->{'room'}} = $param->{'volume'};
 
     readingsBeginUpdate($hash);
     readingsBulkUpdate ($hash, '.volumes', $volumes, 0);
     Raumfeld_BulkUpdateReadingsStrings($hash, 'Volume', $volumes);
-
-    if ($currentRoom eq $param->{'room'}) {
-        readingsBulkUpdate ($hash, 'currentVolume', $param->{'volume'}, 1);
-    }
     readingsEndUpdate($hash, 1);
 
     Log3 ($name, $logLevel, "Raumfeld SetVolume: Success: ");
@@ -409,7 +404,6 @@ sub Raumfeld_SetPower($$$) {
     my $name = $hash->{NAME};
     my $urlAddress = $hash->{url};
     my $request = "";
-    my $currentRoom = ReadingsVal ($name, 'currentRoom', "");
     my $powers = ReadingsVal ($name, '.powers', 0);
 
     if ($power eq "on") {
@@ -435,10 +429,6 @@ sub Raumfeld_SetPower($$$) {
         readingsBeginUpdate ($hash);
         readingsBulkUpdate ($hash, '.powers', $powers, 0);
         Raumfeld_BulkUpdateReadingsStrings($hash, 'Power', $powers);
-
-        if ($currentRoom eq $room) {
-            readingsBulkUpdate ($hash, 'currentPower', $power, 1);
-        }   
         readingsEndUpdate($hash, 1);
     }
     
@@ -529,7 +519,6 @@ sub Raumfeld_SetTitleCallback($$$) {
     readingsBeginUpdate ($hash);
     readingsBulkUpdate ($hash, '.titles', $titles, 0);
     Raumfeld_BulkUpdateReadingsStrings($hash, 'Title', $titles);
-    
     readingsEndUpdate($hash, 1);
 
     Raumfeld_Play ($hash, $param->{'room'});
@@ -548,6 +537,8 @@ sub Raumfeld_QuickPlay ($$) {
     my $name = $hash->{NAME};
     my $urlAddress = $hash->{url};
     my $request = $urlAddress . "/raumserver/controller/leaveStandby?id=" . uri_escape($room) . "&scope=room";
+    my $powers = ReadingsVal ($name, '.powers', 0);
+    
     Log3 ($name, $logLevel, "Raumfeld QuickPlay with request: $request");
     my $param = {
                     room       => $room,  
@@ -559,6 +550,12 @@ sub Raumfeld_QuickPlay ($$) {
                     callback   => \&Raumfeld_QuickPlayCallback
     };  
     HttpUtils_NonblockingGet ($param);
+
+    $powers->{$room} = 'on';
+    readingsBeginUpdate ($hash);
+    readingsBulkUpdate ($hash, '.powers', $powers, 0);
+    Raumfeld_BulkUpdateReadingsStrings($hash, 'Power', $powers);
+    readingsEndUpdate($hash, 1);
 }
 
 sub Raumfeld_QuickPlayCallback($$$) {
@@ -589,7 +586,7 @@ sub Raumfeld_QuickPlayCallback($$$) {
     }
     my $room = $param->{'room'};
     Raumfeld_SetTitle ($hash, $room, $favorite);
-    Log3 ($name, $logLevel, "Raumfeld Play: Successful QuickPlay");
+    Log3 ($name, $logLevel, "Raumfeld QuickPlay: Successful QuickPlay");
 }
 
 ##############################################################################
