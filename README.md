@@ -24,6 +24,9 @@ Options:
 * `title`
     Sets either the predefined favorites and plays them or the user defined streams and plays them in a room
     `set <name> title <room> <value>`
+* `quickplay`
+    turns on the corresponding speaker in the room, takes the favorite from the attribute `favorite` and plays them in a room
+    `set <name> quickplay <room>`
 * `volume`
     Sets the volume of a room to a new `<value>`
     `set <name> volume <room> <value>`
@@ -50,7 +53,7 @@ Two addtional readings are available
 * `Favorites` a sting of a comma separated lsit with all Favorties, that can be used as values for setting the `title`
 
 #### Attributes
-none 
+* `favorite` This string is used by `quickplay` as the title to play.
 
 
 ## Integration into FHEM Tablet UI
